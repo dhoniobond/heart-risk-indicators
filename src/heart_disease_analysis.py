@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr 14 21:08:16 2023
+Heart disease risk indicators: data cleaning, modeling and Tableau prep.
 
-@author: danush
+Cleans the CDC BRFSS 2015 survey down to 20 heart-disease risk factors,
+fits logistic regression / decision tree / random forest classifiers, and
+exports state-level files used by the Tableau dashboards.
+
+Run from the repository root after placing 2015.csv in data/ (see data/README.md).
 """
 
 import os
+from pathlib import Path
 import pandas as pd
 import random
 random.seed(1)
+
+# Raw and intermediate CSVs live in data/ (not committed)
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+
 #read in the dataset 
 
-raw_dataset = pd.read_csv("2015.csv")
+raw_dataset = pd.read_csv(DATA_DIR / "2015.csv")
 raw_dataset.shape
 
 #here we check that the data loaded in is in the correct format
@@ -214,13 +223,13 @@ final =raw_numeric.rename(columns = {'_MICHD':'Heart_Disease',
                                          'INCOME2':'Income','_STATE':'State' })
 # How many people have a heart disease in the data
 final.groupby(['Heart_Disease']).size() # 10.4%
-final.to_csv('heart_disease_health_indicators2014.csv', sep=",", index=False)
+final.to_csv(DATA_DIR / 'heart_disease_health_indicators2014.csv', sep=",", index=False)
 final.columns
 
 # Logistic Regression on the final dataset
 # Finding differentt x variables for logistic regression
 # Trial 1 : 
-final=pd.read_csv('heart_disease_health_indicators2014.csv')
+final=pd.read_csv(DATA_DIR / 'heart_disease_health_indicators2014.csv')
 x=final[['HighBP', 'High_Cholestrol', '_CHOLCHK', 'BMI',
        'Smoker', 'Stroke', 'Diabetes', 'Physical_Activity', 'Fruits',
        'Veggies', 'Alcohol_Consumption', 'Healthcare', 'MEDCOST',
@@ -298,28 +307,28 @@ final.columns
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.scatterplot(x='Heart_Disease', y='Mental_Health', hue='Smoker', data=final)
-plt.xlabel('heart')
-plt.ylabel('mental')
-plt.title('title')
+plt.xlabel('Heart disease (0 = no, 1 = yes)')
+plt.ylabel('Poor mental health days (last 30)')
+plt.title('Mental health vs. heart disease, by smoking status')
 plt.show()
 
 sns.scatterplot(x='Heart_Disease', y='BMI', hue='Smoker', data=final)
-plt.xlabel('heart')
-plt.ylabel('bmi')
-plt.title('Title')
+plt.xlabel('Heart disease (0 = no, 1 = yes)')
+plt.ylabel('BMI (x100)')
+plt.title('BMI vs. heart disease, by smoking status')
 plt.show()
 
 sns.scatterplot(x='Heart_Disease', y='Physical_Health', hue='Smoker', data=final)
-plt.xlabel('heart')
-plt.ylabel('physical health')
-plt.title('Title')
+plt.xlabel('Heart disease (0 = no, 1 = yes)')
+plt.ylabel('Poor physical health days (last 30)')
+plt.title('Physical health vs. heart disease, by smoking status')
 plt.show()
 
 sns.barplot(x='Sex', y='Heart_Disease', hue='Smoker', data=final)
-plt.xlabel('gender')
-plt.ylabel('heart')
-plt.title('plot')
-plt.legend(title='plot')
+plt.xlabel('Sex (0 = female, 1 = male)')
+plt.ylabel('Heart disease rate')
+plt.title('Heart disease rate by sex and smoking status')
+plt.legend(title='Smoker')
 plt.show()
 
 #cleaning state for tableau visualizations
@@ -380,18 +389,18 @@ state_dict = {
 }
 
 # Load the CSV file into a pandas DataFrame
-df3 = pd.read_csv('heart_disease_health_indicators2014.csv')
+df3 = pd.read_csv(DATA_DIR / 'heart_disease_health_indicators2014.csv')
 
 # Replace state codes with state names
-df['State'] = df['State'].map(state_dict)
+df3['State'] = df3['State'].map(state_dict)
 
 # Save the updated DataFrame to a new CSV file
-df.to_csv('updated_heart_disease.csv', index=False)
+df3.to_csv(DATA_DIR / 'updated_heart_disease.csv', index=False)
 
 
 
 # Load the csv file
-df4 = pd.read_csv('updated_heart_disease.csv')
+df4 = pd.read_csv(DATA_DIR / 'updated_heart_disease.csv')
 
 # Define a dictionary of state capitals and their corresponding coordinates
 coordinates = {
@@ -453,5 +462,5 @@ coordinates = {
 df4['Latitude'] = df4['State'].map(lambda x: coordinates.get(x, (None, None))[0])
 df4['Longitude'] = df4['State'].map(lambda x: coordinates.get(x, (None, None))[1])
 
-df4.to_csv('updated_updated_heart_disease.csv')
+df4.to_csv(DATA_DIR / 'heart_disease_by_state_with_coordinates.csv')
 
